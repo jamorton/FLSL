@@ -111,9 +111,8 @@ package teapot
 			// The back buffer size is in actual pixels
 			context3D.configureBackBuffer( 640, 480, 0, true );
 			
-			
-			context3D.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 0, new Vector.<Number>([ 0.0, 0.0, 0.0, 0.0]));
-			context3D.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 1, new Vector.<Number>([ -1.0, 0.0, 0.0, 0.0]));
+			context3D.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 0, new Vector.<Number>([ 0.5, 0.5, 0.5, 0.5]));
+			//context3D.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 1, new Vector.<Number>([ -1.0, 0.0, 0.0, 0.0]));
 			
 			// A simple vertex shader which does a 3D transformation
 			var vertexShaderAssembler:AGALMiniAssembler = new AGALMiniAssembler();
@@ -132,10 +131,11 @@ package teapot
 				//"tex ft0, v0, fs0 <cube,linear,clamp,miplinear>\n" +
 				//"mov ft0, v1\n" +
 				//"mov oc, ft0\n"
-				"ife v1.x, fc0.x \n" +
-				"kil fc1.x\n" +
-				"eif \n" + 
-				"mov oc, v1 \n"
+				//"ife v1.x, fc0.x \n" +
+				//"kil fc1.x\n" +
+				//"eif \n" + 
+				"mul ft0, v1, fc0\n" +
+				"mov oc, ft0"
 			);
 			
 			
@@ -207,7 +207,6 @@ package teapot
 			//context3D.setProgramConstantsFromMatrix( Context3DProgramType.VERTEX, 12, viewInverse, true );
 			
 			// associate the vertex data with with current shader program
-			
 			// position
 			context3D.setVertexBufferAt( 0, vertexBuffer,  0, Context3DVertexBufferFormat.FLOAT_3 );
 			// tex coord
