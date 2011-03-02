@@ -5,11 +5,10 @@
 	instead this just serves as a concise reference.
 *)
 
-//============================ LEXER RULES ============================//
+(*============================ LEXER RULES ============================*)
 
 Letter   = 'A'..'Z' | 'a'..'z';
 Digit    = '0'..'9';
-HexDigit = Digit | 'A'..'F' | 'a'..'f';
 
 Sign           = '+' | '-';
 NumberExponent = ('e' | 'E') [Sign] Digit {Digit};
@@ -21,27 +20,26 @@ Number     = DecimalNumber;
 IdPart     = Letter | '_' | '$';
 Identifier = IdPart {IdPart Digit};
 
-Comparison = '<' | '>' | '<=' | '>=' | '==' | '!=';
-
 Literal = Number;
 
-//============================ PARSER RULES ============================//
+Type      = 'Texture' | 'Matrix' | 'Float4';
+Specifier = 'attribute' | 'varying' | 'uniform';
 
-program = { declaration | shader };
+(*============================ PARSER RULES ============================*)
 
-block   = '{' {statement} '}';
-
-shader = 'shader' Identifier block;
+program    = { shader_var | shader };
+shader     = 'shader' Identifier block;
+shader_var = Specifier Type Identifier [';'];
+block      = '{' {statement} '}';
 
 statement     = (declaration | assignment | function_call) ';';
-declaration   = Identifier Identifier ':' Identifier
+declaration   = Type Identifier;
 assignment    = [declaration | Identifier] '=' expression;
 function_call = Identifier '(' [expression] {',' expression} ')';
 
-expression         = add_expression
-add_expression     = mul_expression {('+' | '-') mul_expression};
-mul_expression     = unary_expression {('*' | '/') unary_expression};
-unary_expression   = ['-'] atom_expression;
-atom_expression    = Identifier | function_call | '(' expression ')' | Literal;
-
+expression       = add_expression
+add_expression   = mul_expression {('+' | '-') mul_expression};
+mul_expression   = unary_expression {('*' | '/') unary_expression};
+unary_expression = ['-'] atom_expression;
+atom_expression  = Identifier | function_call | '(' expression ')' | Literal;
 
