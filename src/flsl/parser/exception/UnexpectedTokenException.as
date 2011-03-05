@@ -1,7 +1,7 @@
 ﻿package flsl.parser.exception 
 {
-	import crystalscript.parser.Token;
-	import crystalscript.parser.TokenType;
+	import flsl.parser.Token;
+	import flsl.parser.TokenType;
 	
 	public class UnexpectedTokenException extends Error
 	{
@@ -11,10 +11,9 @@
 			super();
 			if (tok == null)
 				tok = new Token(TokenType.NONE, "<NONE>");
+			message = "Unexpected token " + tok.type.name + " on line " + tok.line;				
 			if (expected != null)
-				message = "Unexpected token " + tok.type.name + " on line " + tok.line + ", expected " + expected.name;
-			else
-				message = "Unexpected token " + tok.type.name + " on line " + tok.line;
+				message += ", expected " + expected.name;
 		}
 		
 	}

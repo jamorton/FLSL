@@ -30,6 +30,11 @@
 			_line = value;
 		}
 		
+		public function toString():String
+		{
+			return "<" + type.toString() + " " + _value + ">";
+		}
+		
 		public function get type():TokenType { return _type; }
 		public function get value():String { return _value; }
 		public function get line():Number { return _line; }

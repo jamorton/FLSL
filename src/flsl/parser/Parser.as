@@ -1,10 +1,8 @@
 ﻿package flsl.parser 
 {
-	import crystalscript.parser.ast.AstNode;
-	import crystalscript.parser.ast.AstNodeType;
-	import crystalscript.parser.ast.BranchNode;
-	import crystalscript.parser.ast.LeafNode;
-	import crystalscript.parser.exception.UnexpectedTokenException;
+	import flash.system.IMEConversionMode;
+	import flsl.parser.ast.*;
+	import flsl.parser.exception.UnexpectedTokenException;
 	
 	public class Parser 
 	{
@@ -30,7 +28,7 @@
 		public function parse():void 
 		{
 			_tok.next();
-			block(_tree);
+			program(_tree);
 		}
 		
 		private function log_track(where:String):void
@@ -42,63 +40,71 @@
 		}
 		
 		/**
-		 * block ::= {statement}
+		 * program    = { shader | shader_var };
+		 */
+		private function program(ctx:BranchNode):void
+		{
+			log_track("program");
+			
+			while (_tok.token.type != TokenType.EOF)
+			{
+				if (_tok.token.type = TokenType.SHADER)
+					shader(ctx);
+				else
+					shaderVar(ctx);
+			}
+		}
+		
+		/**
+		 * shader     = 'shader' Identifier block;
+		 */
+		private function shader(ctx:BranchNode):void
+		{
+			log_track("shader");
+			_tok.accept(TokenType.IDENTIFIER); // SKIP 'shader'
+			var bn:BranchNode = new BranchNode(AstNodeType.SHADER);
+			var ln:LeafNode = new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER);
+			ctx.addChild(bn);
+			bn.addChild(ln);
+			block(ctx);
+		}
+		
+		/**
+		 * shader_var = Specifier Type Identifier ';';
+		 */
+		private function shaderVar(ctx:BranchNode):void
+		{
+			log_track("shader_var");
+			var bn:BranchNode = new BranchNode(AstNodeType.SHADER_VAR);
+			bn.addChild(new LeafNode(_tok.accept(TokenType.SPECIFIER).value, AstNodeType.IDENTIFIER));
+			bn.addChild(new LeafNode(_tok.accept(TokenType.TYPE).value, AstNodeType.IDENTIFIER));
+			bn.addChild(new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER));
+			ctx.addChild(bn);
+		}
+		
+		/**
+		 * block      = '{' {statement} '}';
 		 */
 		private function block(ctx:BranchNode):void  
 		{
 			log_track("block");
-			//var bn:BranchNode = new BranchNode(AstNodeType.BLOCK)
-			//ctx.children.push(bn);
 			while (statement(ctx)) {}
 		}
 		
 		/**
-		 * @return has block ended
-		 * 
-		 * statement ::= assignment  | function_call | if_block |
-		 *               loop_block | while_block | breakStmt |
-		 *               continueStmt | returnStmt
+		 * statement     = (declaration | assignment | function_call) ';';
 		 */
-		private function statement(ctx:BranchNode):Boolean
+		private function statement(ctx:BranchNode):void
 		{
 			log_track("statement");
+			
+			if (_tok.token.type
+			
 			// all statements begin with an identifier (not on purpose though)
 			//_tok.expect(TokenType.IDENTIFIER);
 			switch (_tok.token.type) 
 			{
-				case TokenType.IF:
-					ifBlock(ctx);
-					break;
-					
-				case TokenType.WHILE:
-					whileBlock(ctx);
-					break;
-					
-				case TokenType.LOOP:
-					loopBlock(ctx);
-					break;
-					
 				case TokenType.EOF:
-					return false;
-					
-				case TokenType.BREAK:
-					ctx.children.push(
-						new LeafNode("break", AstNodeType.BREAK));
-					break;
-					//return false;
-					
-				case TokenType.CONTINUE:
-					ctx.children.push(
-						new LeafNode("break", AstNodeType.CONTINUE));
-					break;
-					//return false;
-					
-				case TokenType.RETURN:
-					returnStmt(ctx);
-					break;
-					//return false;
-					
-				case TokenType.END:
 					return false;
 					
 				// function call or assignment

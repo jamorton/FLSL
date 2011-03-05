@@ -1,18 +1,18 @@
 ﻿package flsl.parser 
 {
-	
-	import crystalscript.etc.Util;
-	import crystalscript.parser.exception.UnexpectedTokenException;
+
+	import flsl.parser.exception.UnexpectedTokenException;
 
 	public class Tokenizer
 	{
 		
 		private var _tokenRegex:Array = [
-			// letter or underscore followed by zero or more alphanumeric/underscore
-			[TokenType.IDENTIFIER, /[a-zA-Z_]\w*/],
-			// floats with exponent support etc.
+			[TokenType.IDENTIFIER, /[a-zA-Z_][a-zA-Z0-9_]*/],
 			[TokenType.NUMBER, /[-+]?[0-9]+[.]?[0-9]*([eE][-+]?[0-9]+)?/],
 			// grouping
+			[TokenType.SEMI, /;/],
+			[TokenType.LBRACE, /{/],
+			[TokenType.RBRACE, /}/],
 			[TokenType.LPAREN, /\(/],
 			[TokenType.RPAREN, /\)/],
 			[TokenType.COMMA,  /,/],
@@ -21,13 +21,7 @@
 			[TokenType.MINUS, /-/],
 			[TokenType.STAR, /\*/],
 			[TokenType.SLASH, /\//],
-			[TokenType.LESS, /</],
-			[TokenType.GREATER, />/],
-			[TokenType.EQUALEQUAL, /==/], // must come before '='!
-			[TokenType.EQUAL, /=/],
-			[TokenType.LESSEQUAL, /<=/],
-			[TokenType.GREATEREQUAL, />=/],
-			[TokenType.NOTEQUAL, /!=/]
+			[TokenType.EQUAL, /=/]
 		];
 		
 		private var _finalRegex:RegExp;
@@ -55,11 +49,9 @@
 			
 			reg += "^(";
 			
-			var i:Number = 0;
-			for each (var g:Array in _tokenRegex)
+			for (var i:int = 0; i < _tokenRegex.length; i++)
 			{
-				i++;
-				reg += "?P<" + g[0].name + ">" + g[1].source;
+				reg += "?P<" + _tokenRegex[i][0].name + ">" + _tokenRegex[i][1].source;
 				if (i < _tokenRegex.length)
 					reg += ")|^(";
 			}
@@ -87,7 +79,7 @@
 			return tokens;
 		}
 		
-		public function next():void
+		public function next():Token
 		{
 			// skip spaces
 			while (_source.charCodeAt(_position) <= 32) 
@@ -99,7 +91,6 @@
 			// end of script
 			if (_position > _source.length) 
 			{
-				trace("yes");
 				_nextToken = new Token(TokenType.NONE, "<NONE>");
 				_token = new Token(TokenType.EOF, "<EOF>");
 				return;
@@ -116,7 +107,7 @@
 			_position += result[0].length;
 			
 			var type:TokenType = null;
-			for each (var i:Array in _tokenRegex) 
+			for each (var i:Array in _tokenRegex)
 			{
 				// TODO: make this faster
 				if (result[i[0].name] == result[0]) 
@@ -141,19 +132,18 @@
 		{
 			switch (text)
 			{
-				case "not":      return TokenType.NOT;
-				case "mod":      return TokenType.MODULO;
-				case "while":    return TokenType.WHILE;
-				case "loop":     return TokenType.LOOP;
-				case "or":       return TokenType.OR;
-				case "if":       return TokenType.IF;
-				case "end":      return TokenType.END;
-				case "break":    return TokenType.BREAK;
-				case "continue": return TokenType.CONTINUE;
-				case "and":      return TokenType.AND;
-				case "return":   return TokenType.RETURN;
-				default:         return type;
+				case "shader":
+					return TokenType.SHADER;
+				case "Texture":
+				case "Matrix":
+				case "Float4":
+					return TokenType.TYPE;
+				case "attribute":
+				case "varying":
+				case "uniform":
+					return TokenType.SPECIFIER;
 			}
+			return type;
 		}
 		
 		public function peek():Token 
@@ -161,12 +151,28 @@
 			return _nextToken;
 		}
 		
-		public function expect(type:TokenType):Boolean 
+		public function expect(type:TokenType):void 
 		{
-			if (_token.type == type)
-				return true;
-			throw new UnexpectedTokenException(_token, type);
-			return false;
+			if (_token.type != type)
+				throw new UnexpectedTokenException(_token, type);
+		}
+		
+		public function accept(type:TokenType):Token
+		{
+			var t:Token = _token;
+			expect(type);
+			next();
+			return t;
+		}
+		
+		public static function debugSource(src:String):void
+		{
+			var tok:Tokenizer = new Tokenizer(src);
+			while (tok.token.type != TokenType.EOF)
+			{
+				trace(tok.token);
+				tok.next();
+			}
 		}
 		
 		public function get source():String { return _source; }

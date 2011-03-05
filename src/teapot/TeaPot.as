@@ -134,8 +134,7 @@ package teapot
 				//"ife v1.x, fc0.x \n" +
 				//"kil fc1.x\n" +
 				//"eif \n" + 
-				"mul ft0, v1, fc0\n" +
-				"mov oc, ft0"
+				"mov oc, v1"
 			);
 			
 			

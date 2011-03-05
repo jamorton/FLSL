@@ -1,7 +1,7 @@
 
 (*
 	The following is a simple EBNF Grammar for FLSL.
-	It is NOT used directly by any part of the implementation
+	It is NOT used directly by any part of the implementation,
 	instead this just serves as a concise reference.
 *)
 
@@ -13,23 +13,22 @@ Digit    = '0'..'9';
 Sign           = '+' | '-';
 NumberExponent = ('e' | 'E') [Sign] Digit {Digit};
 Integer        = Digit {Digit};
-
 DecimalNumber  = Sign Integer ['.' Integer] [NumberExponent];
+Number         = DecimalNumber;
 
-Number     = DecimalNumber;
-IdPart     = Letter | '_' | '$';
+IdPart     = Letter | '_';
 Identifier = IdPart {IdPart Digit};
-
-Literal = Number;
 
 Type      = 'Texture' | 'Matrix' | 'Float4';
 Specifier = 'attribute' | 'varying' | 'uniform';
 
 (*============================ PARSER RULES ============================*)
 
-program    = { shader_var | shader };
+literal = Number;
+
+program    = { shader | shader_var };
 shader     = 'shader' Identifier block;
-shader_var = Specifier Type Identifier [';'];
+shader_var = Specifier Type Identifier ';';
 block      = '{' {statement} '}';
 
 statement     = (declaration | assignment | function_call) ';';
@@ -37,9 +36,11 @@ declaration   = Type Identifier;
 assignment    = [declaration | Identifier] '=' expression;
 function_call = Identifier '(' [expression] {',' expression} ')';
 
+access = Identifer '.' Identifier;
+
 expression       = add_expression
 add_expression   = mul_expression {('+' | '-') mul_expression};
 mul_expression   = unary_expression {('*' | '/') unary_expression};
 unary_expression = ['-'] atom_expression;
-atom_expression  = Identifier | function_call | '(' expression ')' | Literal;
+atom_expression  = Identifier | function_call | '(' expression ')' | literal | access;
 
