@@ -8,15 +8,15 @@
 	{
 		
 		/**
-		 * NOTE: next() etiquette! Always leave the current token on the
+		 * NOTE: next()/accept() etiquette! Always leave the current token on the
 		 *       FIRST token of the grammar rule function you are
 		 *       recursing to. Always leave the current token on the token
 		 *       AFTER your grammar rule's last token when returning from a
 		 *       function.
 		 */
 		
-		private var _tok  : Tokenizer;
-		private var _tree : BranchNode;
+		private var _tok:Tokenizer;
+		private var _tree:BranchNode;
 		public static var LOG_TRACK:Boolean = false;
 		
 		public function Parser(source:String)
@@ -34,9 +34,7 @@
 		private function log_track(where:String):void
 		{
 			if (LOG_TRACK)
-			{
 				trace(where);
-			}
 		}
 		
 		/**
@@ -88,7 +86,10 @@
 		private function block(ctx:BranchNode):void  
 		{
 			log_track("block");
-			while (statement(ctx)) {}
+			_tok.accept(TokenType.LBRACE);
+			while (_tok.token.type != TokenType.RBRACE)
+				statement(ctx)
+			_tok.next();
 		}
 		
 		/**
@@ -98,14 +99,21 @@
 		{
 			log_track("statement");
 			
-			if (_tok.token.type
+			var t:TokenType = _tok.token.type;
+			
+			if (t == TokenType.EOF)
+				throw new Error("Unexpected end of file, missing end of block '}'");
+				
+			if (t != TokenType.IDENTIFIER)
+				throw new UnexpectedTokenException(_tok.token);
+			
 			
 			// all statements begin with an identifier (not on purpose though)
 			//_tok.expect(TokenType.IDENTIFIER);
 			switch (_tok.token.type) 
 			{
 				case TokenType.EOF:
-					return false;
+					
 					
 				// function call or assignment
 				default:
@@ -126,7 +134,7 @@
 		}
 		
 		/**
-		 * assignment    ::= Identifier '=' expression
+		 * assignment    = [declaration | Identifier] '=' expression;
 		 */
 		private function assignment(ctx:BranchNode):void
 		{
@@ -140,7 +148,7 @@
 		}
 		
 		/**
-		 * function_call ::= Identifier '(' [expression] {',' expression} ')'
+		 * function_call = Identifier '(' [expression] {',' expression} ')';
 		 */
 		private function functionCall(ctx:BranchNode):void 
 		{
@@ -163,142 +171,16 @@
 		}
 		
 		/**
-		 * if_block      ::= 'if' expression block 'end'
+		 * expression       = add_expression
+		 * add_expression   = mul_expression {('+' | '-') mul_expression};
+		 * mul_expression   = unary_expression {('*' | '/') unary_expression};
+		 * unary_expression = ['-'] atom_expression;
+		 * atom_expression  = Identifier | function_call | '(' expression ')' | literal | access;
 		 */
-		private function ifBlock(ctx:BranchNode):void 
-		{
-			log_track("ifBlock");
-			
-			var bn:BranchNode = new BranchNode(AstNodeType.IF_BLOCK);
-			ctx.children.push(bn);
-			
-			_tok.next(); // SKIP 'if'
-			expression(bn);
-			block(bn);
-		}
-		
-		/**
-		 * loop_block    ::= 'loop' block 'end'
-		 */
-		private function loopBlock(ctx:BranchNode):void 
-		{
-			log_track("loopBlock");
-			
-			var bn:BranchNode = new BranchNode(AstNodeType.LOOP_BLOCK);
-			ctx.children.push(bn);
-			
-			_tok.next(); // SKIP 'loop'
-			block(bn);
-		}
-		
-		/**
-		 * while_block   ::= 'while' expression block 'end'
-		 */
-		private function whileBlock(ctx:BranchNode):void 
-		{
-			log_track("whileBlock");
-			
-			var bn:BranchNode = new BranchNode(AstNodeType.WHILE_BLOCK);
-			ctx.children.push(bn);
-			
-			_tok.next(); // SKIP 'while'
-			expression(bn);
-			block(bn);
-		}
-		
-		/**
-		 * returnStmt   ::= 'return' expression
-		 */
-		private function returnStmt(ctx:BranchNode):void
-		{
-			log_track("returnStmt");
-			
-			_tok.next(); // SKIP 'return'
-			var bn:BranchNode = new BranchNode(AstNodeType.RETURN);
-			ctx.children.push(bn);
-			expression(bn);
-		}
-		
-		/**
-		 * expression         ::= or_expression
-		 * or_expression      ::= and_expression {'or' and_expression}
-		 * and_expression     ::= compare_expression {'and' compare_expression}
-		 * compare_expression ::= add_expression {Comparison add_expression}
-		 * add_expression     ::= mul_expression {'+' | '-' mul_expression}
-		 * mul_expression     ::= unary_expression {'*' | '/' | 'mod' unary_expression}
-		 * unary_expression   ::= {'not' | '-'} atom_expression
-		 * atom_expression    ::= Identifier | function_call | '(' expression ')' | Literal
-		 */
-		
 		private function expression(ctx:BranchNode):void 
 		{
 			log_track("expression");
-			ctx.children.push(orExpression());
-		}
-		
-		private function orExpression():AstNode 
-		{
-			var ret:AstNode = andExpression();
-			while (_tok.token.type == TokenType.OR) 
-			{
-				log_track("orExpression");
-				_tok.next(); // SKIP 'or'
-				var bn:BranchNode = new BranchNode(AstNodeType.EXPR_OR);
-				bn.children.push(ret);
-				bn.children.push(andExpression());
-				ret = bn;
-			}
-			return ret;
-		}
-		
-		private function andExpression():AstNode 
-		{	
-			var ret:AstNode = compareExpression();
-			while (_tok.token.type == TokenType.AND)
-			{
-				log_track("andExpression");
-				_tok.next(); // SKIP 'and'
-				var bn:BranchNode = new BranchNode(AstNodeType.EXPR_AND);
-				bn.children.push(ret);
-				bn.children.push(compareExpression());
-				ret = bn;
-			}
-			return ret;
-		}
-		
-		private function compareExpression():AstNode 
-		{
-			var ret:AstNode = addExpression();
-			var bn:BranchNode;
-			switch (_tok.token.type) 
-			{
-				case TokenType.NOTEQUAL:
-					bn = new BranchNode(AstNodeType.EXPR_COMPARE, AstNodeType.COMPARE_NOTEQ);
-					break;
-				case TokenType.GREATER:
-					bn = new BranchNode(AstNodeType.EXPR_COMPARE, AstNodeType.COMPARE_GREATER);
-					break;
-				case TokenType.GREATEREQUAL:
-					bn = new BranchNode(AstNodeType.EXPR_COMPARE, AstNodeType.COMPARE_GREATEQ);
-					break;
-				case TokenType.LESS:
-					bn = new BranchNode(AstNodeType.EXPR_COMPARE, AstNodeType.COMPARE_LESS);
-					break;
-				case TokenType.LESSEQUAL:
-					bn = new BranchNode(AstNodeType.EXPR_COMPARE, AstNodeType.COMPARE_LESSEQ);
-					break;
-				case TokenType.EQUALEQUAL:
-					bn = new BranchNode(AstNodeType.EXPR_COMPARE, AstNodeType.COMPARE_EQUAL);
-					break;
-				default:
-					return ret;
-			}
-			log_track("compareExpression");
-			
-			_tok.next(); // SKIP operator
-			bn.children.push(ret);
-			bn.children.push(addExpression());
-			return bn;
+			ctx.children.push(addExpression());
 		}
 		
 		private function addExpression():AstNode 
@@ -373,7 +255,7 @@
 			{
 				var t:Token = _tok.peek();
 				// function call
-				if (t.type == TokenType.LPAREN) 
+				if (t.type == TokenType.LPAREN)
 				{
 					// bad hack to capture functionCall output
 					var temp:BranchNode = new BranchNode(AstNodeType.NONE);
@@ -391,7 +273,7 @@
 			else if (_tok.token.type == TokenType.LPAREN) 
 			{
 				_tok.next(); // SKIP '('
-				ret = orExpression();
+				ret = addExpression();
 				_tok.next(); // SKIP ')'
 			}
 			// number literal

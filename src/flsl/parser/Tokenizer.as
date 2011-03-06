@@ -42,6 +42,7 @@
 			_token     = new Token(TokenType.NONE, "<NONE>");
 			_nextToken = new Token(TokenType.NONE, "<NONE>");
 			buildRegex();
+			next();
 		}
 		
 		private function buildRegex():void {
@@ -79,7 +80,7 @@
 			return tokens;
 		}
 		
-		public function next():Token
+		public function next():void
 		{
 			// skip spaces
 			while (_source.charCodeAt(_position) <= 32) 
@@ -122,10 +123,6 @@
 			
 			_token = _nextToken;
 			_nextToken = token;
-			
-			// happens on first next
-			if (_token.type == TokenType.NONE)
-				next();
 		}
 		
 		private function reservedWords(text:String, type:TokenType):TokenType 

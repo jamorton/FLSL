@@ -3,6 +3,7 @@ package
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flsl.parser.Tokenizer;
+	import teapot.com.adobe.utils.AGALMiniAssembler;
 	import teapot.TeaPot;
 	
 	public class Main extends Sprite 
@@ -18,6 +19,7 @@ package
 		{
 			removeEventListener(Event.ADDED_TO_STAGE, init);
 			
+			/*
 			var src:XML = <data><![CDATA[
 				attribute Float4 pos;
 				attribute Float4 norm;
@@ -45,6 +47,9 @@ package
 			]]></data>;
 
 			Tokenizer.debugSource(src.toString());
+			*/
+			
+			addChild(new TeaPot(stage));
 		}
 		
 	}
