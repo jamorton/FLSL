@@ -19,7 +19,6 @@ package
 		{
 			removeEventListener(Event.ADDED_TO_STAGE, init);
 			
-			/*
 			var src:XML = <data><![CDATA[
 				attribute Float4 pos;
 				attribute Float4 norm;
@@ -47,9 +46,7 @@ package
 			]]></data>;
 
 			Tokenizer.debugSource(src.toString());
-			*/
 			
-			addChild(new TeaPot(stage));
 		}
 		
 	}

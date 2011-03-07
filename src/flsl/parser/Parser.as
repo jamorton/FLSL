@@ -104,9 +104,11 @@
 			if (t == TokenType.EOF)
 				throw new Error("Unexpected end of file, missing end of block '}'");
 				
-			if (t != TokenType.IDENTIFIER)
-				throw new UnexpectedTokenException(_tok.token);
-			
+			if (t == TokenType.TYPE)
+			{
+				var decl:BranchNode = new BranchNode(AstNodeType.DECLARATION);
+				decl.addChild(new LeafNode(AstNodeType.IDENTIFIER, 
+			}
 			
 			// all statements begin with an identifier (not on purpose though)
 			//_tok.expect(TokenType.IDENTIFIER);
