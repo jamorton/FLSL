@@ -32,10 +32,10 @@ public static const EXPR_FUNCTIONCALL : AstNodeType = new AstNodeType();
 public static const ACCESS            : AstNodeType = new AstNodeType();
 public static const SHADER_VAR        : AstNodeType = new AstNodeType();
 
-
 // Leaf Nodes
 public static const IDENTIFIER        : AstNodeType = new AstNodeType();
 public static const NUMBER_LITERAL    : AstNodeType = new AstNodeType();
+
 /**
  * Subtypes
  */

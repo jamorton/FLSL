@@ -107,7 +107,8 @@
 			if (t == TokenType.TYPE)
 			{
 				var decl:BranchNode = new BranchNode(AstNodeType.DECLARATION);
-				decl.addChild(new LeafNode(AstNodeType.IDENTIFIER, 
+				decl.addChild(new LeafNode(_tok.accept(TokenType.TYPE).value, AstNodeType.IDENTIFIER));
+				decl.addChild(new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER));
 			}
 			
 			// all statements begin with an identifier (not on purpose though)
