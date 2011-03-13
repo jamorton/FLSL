@@ -24,7 +24,7 @@
 		{
 			var out:String = "";
 			for (var i:Number = 0; i < level; i++) 
-				out += "    ";
+				out += "   ";
 				
 			out += "<" + _type.name
 			if (_sub != AstNodeType.NO_SUBTYPE)

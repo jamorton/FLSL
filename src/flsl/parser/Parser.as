@@ -46,7 +46,7 @@
 			
 			while (_tok.token.type != TokenType.EOF)
 			{
-				if (_tok.token.type = TokenType.SHADER)
+				if (_tok.token.type == TokenType.SHADER)
 					shader(ctx);
 				else
 					shaderVar(ctx);
@@ -59,12 +59,12 @@
 		private function shader(ctx:BranchNode):void
 		{
 			log_track("shader");
-			_tok.accept(TokenType.IDENTIFIER); // SKIP 'shader'
+			_tok.accept(TokenType.SHADER); // SKIP 'shader'
 			var bn:BranchNode = new BranchNode(AstNodeType.SHADER);
 			var ln:LeafNode = new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER);
 			ctx.addChild(bn);
 			bn.addChild(ln);
-			block(ctx);
+			block(bn);
 		}
 		
 		/**
@@ -104,6 +104,7 @@
 			log_track("statement");
 			
 			var t:TokenType = _tok.token.type;
+			var bn:BranchNode;
 			
 			if (t == TokenType.EOF)
 				throw new Error("Unexpected end of file, missing end of block '}'");
@@ -114,7 +115,7 @@
 				decl.addChild(new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER));
 				
 				// plain declaration
-				if (_tok.token.type = TokenType.SEMI)
+				if (_tok.token.type == TokenType.SEMI)
 				{
 					_tok.accept(TokenType.SEMI); // SKIP ';'
 					ctx.addChild(decl);
@@ -122,7 +123,7 @@
 				// assignment with declaration
 				else
 				{
-					var bn:BranchNode = new BranchNode(AstNodeType.ASSIGNMENT);
+					bn = new BranchNode(AstNodeType.ASSIGNMENT);
 					bn.addChild(decl);
 					_tok.accept(TokenType.EQUAL);
 					expression(bn);
@@ -132,7 +133,7 @@
 			// assignment w/o declaration
 			else if (_tok.peek().type == TokenType.EQUAL)
 			{
-				var bn:BranchNode = new BranchNode(AstNodeType.ASSIGNMENT);
+				bn = new BranchNode(AstNodeType.ASSIGNMENT);
 				bn.addChild(new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER));
 				_tok.accept(TokenType.EQUAL); // SKIP '='
 				expression(bn);
@@ -154,7 +155,7 @@
 			
 			var bn:BranchNode = new BranchNode(AstNodeType.FUNCTION_CALL);
 			ctx.children.push(bn);
-			bn.children.push(new LeafNode(_tok.accept().value, AstNodeType.IDENTIFIER));
+			bn.children.push(new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER));
 			
 			_tok.accept(TokenType.LPAREN); // SKIP '('
 			
@@ -228,9 +229,7 @@
 		{			
 			var bn:BranchNode;
 			if (_tok.token.type == TokenType.MINUS)
-				bn = new BranchNode(AstNodeType.UNARY_NEGATE);
-			else if (_tok.token.type == TokenType.NOT)
-				bn = new BranchNode(AstNodeType.UNARY_NOT);
+				bn = new BranchNode(AstNodeType.EXPR_NEG);
 			else
 				return atomExpression();
 				
@@ -259,12 +258,12 @@
 					functionCall(temp);
 					ret =  temp.children[0];
 				}
-				else if (t.type = TokenType.DOT)
+				else if (t.type == TokenType.DOT)
 				{
 					var bn:BranchNode = new BranchNode(AstNodeType.ACCESS);
-					bn.addChild(new LeafNode(_tok.accept(TokenType.IDENTIFIER), AstNodeType.IDENTIFIER));
+					bn.addChild(new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER));
 					_tok.accept(TokenType.DOT); // SKIP 'dot'
-					bn.addChild(new LeafNode(_tok.accept(TokenType.IDENTIFIER), AstNodeType.IDENTIFIER));
+					bn.addChild(new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER));
 					ret = bn;
 				}
 				// variable

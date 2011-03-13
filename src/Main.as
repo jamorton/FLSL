@@ -2,6 +2,7 @@ package
 {
 	import flash.display.Sprite;
 	import flash.events.Event;
+	import flsl.parser.Parser;
 	import flsl.parser.Tokenizer;
 	import teapot.com.adobe.utils.AGALMiniAssembler;
 	import teapot.TeaPot;
@@ -45,7 +46,9 @@ package
 				}
 			]]></data>;
 
-			Tokenizer.debugSource(src.toString());
+			var p:Parser = new Parser(src.toString());
+			p.parse();
+			trace(p.tree.toString());
 			
 		}
 		

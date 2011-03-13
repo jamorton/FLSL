@@ -28,7 +28,6 @@ public static const FUNCTION_CALL     : AstNodeType = new AstNodeType();
 public static const EXPR_ADD          : AstNodeType = new AstNodeType();
 public static const EXPR_MUL          : AstNodeType = new AstNodeType();
 public static const EXPR_NEG          : AstNodeType = new AstNodeType();
-public static const EXPR_FUNCTIONCALL : AstNodeType = new AstNodeType();
 public static const ACCESS            : AstNodeType = new AstNodeType();
 public static const SHADER_VAR        : AstNodeType = new AstNodeType();
 

@@ -15,7 +15,7 @@
 		
 		public function addChild(bn:AstNode):void
 		{
-			// nah
+			_children.push(bn);
 		}
 		
 		public function get children():Vector.<AstNode> { return _children; }
