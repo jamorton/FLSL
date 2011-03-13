@@ -17,6 +17,7 @@
 			[TokenType.RPAREN, /\)/],
 			[TokenType.COMMA,  /,/],
 			// operators
+			[TokenType.DOT, /\./],
 			[TokenType.PLUS, /\+/],
 			[TokenType.MINUS, /-/],
 			[TokenType.STAR, /\*/],

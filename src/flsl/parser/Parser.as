@@ -77,6 +77,7 @@
 			bn.addChild(new LeafNode(_tok.accept(TokenType.SPECIFIER).value, AstNodeType.IDENTIFIER));
 			bn.addChild(new LeafNode(_tok.accept(TokenType.TYPE).value, AstNodeType.IDENTIFIER));
 			bn.addChild(new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER));
+			_tok.accept(TokenType.SEMI); // skip ';'
 			ctx.addChild(bn);
 		}
 		
@@ -94,6 +95,9 @@
 		
 		/**
 		 * statement     = (declaration | assignment | function_call) ';';
+		 * declaration   = Type Identifier;
+		 * assignment    = [declaration | Identifier] '=' expression;
+		 * function_call = Identifier '(' [expression] {',' expression} ')';
 		 */
 		private function statement(ctx:BranchNode):void
 		{
@@ -103,51 +107,42 @@
 			
 			if (t == TokenType.EOF)
 				throw new Error("Unexpected end of file, missing end of block '}'");
-				
-			if (t == TokenType.TYPE)
+			else if (t == TokenType.TYPE)
 			{
 				var decl:BranchNode = new BranchNode(AstNodeType.DECLARATION);
 				decl.addChild(new LeafNode(_tok.accept(TokenType.TYPE).value, AstNodeType.IDENTIFIER));
 				decl.addChild(new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER));
+				
+				// plain declaration
+				if (_tok.token.type = TokenType.SEMI)
+				{
+					_tok.accept(TokenType.SEMI); // SKIP ';'
+					ctx.addChild(decl);
+				}
+				// assignment with declaration
+				else
+				{
+					var bn:BranchNode = new BranchNode(AstNodeType.ASSIGNMENT);
+					bn.addChild(decl);
+					_tok.accept(TokenType.EQUAL);
+					expression(bn);
+					ctx.addChild(bn);
+				}
 			}
-			
-			// all statements begin with an identifier (not on purpose though)
-			//_tok.expect(TokenType.IDENTIFIER);
-			switch (_tok.token.type) 
+			// assignment w/o declaration
+			else if (_tok.peek().type == TokenType.EQUAL)
 			{
-				case TokenType.EOF:
-					
-					
-				// function call or assignment
-				default:
-					var nex:Token = _tok.peek();
-					if (nex.type == TokenType.EQUAL)
-						assignment(ctx);
-					else if (nex.type == TokenType.LPAREN)
-						functionCall(ctx);
-					else {
-						throw new UnexpectedTokenException(_tok.token);
-						return false;
-					}
-						
-					break;
+				var bn:BranchNode = new BranchNode(AstNodeType.ASSIGNMENT);
+				bn.addChild(new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER));
+				_tok.accept(TokenType.EQUAL); // SKIP '='
+				expression(bn);
+				ctx.addChild(bn);
 			}
-			
-			return true;
-		}
-		
-		/**
-		 * assignment    = [declaration | Identifier] '=' expression;
-		 */
-		private function assignment(ctx:BranchNode):void
-		{
-			log_track("assignment");
-			var bn:BranchNode = new BranchNode(AstNodeType.ASSIGNMENT);
-			ctx.children.push(bn);
-			bn.children.push(new LeafNode(_tok.token.value, AstNodeType.IDENTIFIER));
-			_tok.next(); // SKIP identifier
-			_tok.next(); // SKIP '='
-			expression(bn);
+			// function call
+			else
+				functionCall(ctx);
+				
+			_tok.accept(TokenType.SEMI);
 		}
 		
 		/**
@@ -159,10 +154,9 @@
 			
 			var bn:BranchNode = new BranchNode(AstNodeType.FUNCTION_CALL);
 			ctx.children.push(bn);
-			bn.children.push(new LeafNode(_tok.token.value, AstNodeType.IDENTIFIER));
+			bn.children.push(new LeafNode(_tok.accept().value, AstNodeType.IDENTIFIER));
 			
-			_tok.next(); // SKIP identifier
-			_tok.next(); // SKIP '('
+			_tok.accept(TokenType.LPAREN); // SKIP '('
 			
 			while (_tok.token.type != TokenType.RPAREN) 
 			{
@@ -264,6 +258,14 @@
 					var temp:BranchNode = new BranchNode(AstNodeType.NONE);
 					functionCall(temp);
 					ret =  temp.children[0];
+				}
+				else if (t.type = TokenType.DOT)
+				{
+					var bn:BranchNode = new BranchNode(AstNodeType.ACCESS);
+					bn.addChild(new LeafNode(_tok.accept(TokenType.IDENTIFIER), AstNodeType.IDENTIFIER));
+					_tok.accept(TokenType.DOT); // SKIP 'dot'
+					bn.addChild(new LeafNode(_tok.accept(TokenType.IDENTIFIER), AstNodeType.IDENTIFIER));
+					ret = bn;
 				}
 				// variable
 				else 
