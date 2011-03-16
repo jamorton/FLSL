@@ -1,4 +1,4 @@
-﻿package flsl.parser.ast 
+﻿package flsl.parser 
 {
 
 	public class AstOptimizer 

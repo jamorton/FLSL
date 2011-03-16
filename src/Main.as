@@ -4,6 +4,7 @@ package
 	import flash.events.Event;
 	import flsl.parser.Parser;
 	import flsl.parser.Tokenizer;
+	import flsl.parser.TokenType;
 	import teapot.com.adobe.utils.AGALMiniAssembler;
 	import teapot.TeaPot;
 	
@@ -46,10 +47,11 @@ package
 				}
 			]]></data>;
 
-			var p:Parser = new Parser(src.toString());
-			p.parse();
-			trace(p.tree.toString());
 			
+			//var s1:Number = (new Date()).getMilliseconds();
+			trace(Parser.parse(src.toString()).toString());
+			//var time1:Number = (new Date()).getMilliseconds() - s1;
+			//trace(time1);
 		}
 		
 	}

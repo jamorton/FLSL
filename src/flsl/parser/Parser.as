@@ -16,19 +16,19 @@
 		 */
 		
 		private var _tok:Tokenizer;
-		private var _tree:BranchNode;
 		public static var LOG_TRACK:Boolean = false;
 		
-		public function Parser(source:String)
+		public function Parser(tok:Tokenizer)
 		{
-			_tok  = new Tokenizer(source);
-			_tree = new BranchNode(AstNodeType.ROOT_NODE);
+			_tok = tok;
+			tok.next();
 		}
 		
-		public function parse():void 
+		public static function parse(source:String):AstNode 
 		{
-			_tok.next();
-			program(_tree);
+			var t:Tokenizer = new Tokenizer(source);
+			var p:Parser = new Parser(t);
+			return p.exec();
 		}
 		
 		private function log_track(where:String):void
@@ -37,10 +37,17 @@
 				trace(where);
 		}
 		
+		public function exec():AstNode
+		{
+			var ctx:AstNode = new AstNode(AstNodeType.PROGRAM);
+			program(ctx);
+			return ctx;
+		}
+		
 		/**
 		 * program    = { shader | shader_var };
 		 */
-		private function program(ctx:BranchNode):void
+		private function program(ctx:AstNode):void
 		{
 			log_track("program");
 			
@@ -56,12 +63,12 @@
 		/**
 		 * shader     = 'shader' Identifier block;
 		 */
-		private function shader(ctx:BranchNode):void
+		private function shader(ctx:AstNode):void
 		{
 			log_track("shader");
 			_tok.accept(TokenType.SHADER); // SKIP 'shader'
-			var bn:BranchNode = new BranchNode(AstNodeType.SHADER);
-			var ln:LeafNode = new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER);
+			var bn:AstNode = new AstNode(AstNodeType.SHADER);
+			var ln:AstNode = new AstNode(AstNodeType.IDENTIFIER, _tok.accept(TokenType.IDENTIFIER).value);
 			ctx.addChild(bn);
 			bn.addChild(ln);
 			block(bn);
@@ -70,13 +77,13 @@
 		/**
 		 * shader_var = Specifier Type Identifier ';';
 		 */
-		private function shaderVar(ctx:BranchNode):void
+		private function shaderVar(ctx:AstNode):void
 		{
 			log_track("shader_var");
-			var bn:BranchNode = new BranchNode(AstNodeType.SHADER_VAR);
-			bn.addChild(new LeafNode(_tok.accept(TokenType.SPECIFIER).value, AstNodeType.IDENTIFIER));
-			bn.addChild(new LeafNode(_tok.accept(TokenType.TYPE).value, AstNodeType.IDENTIFIER));
-			bn.addChild(new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER));
+			var bn:AstNode = new AstNode(AstNodeType.SHADER_VAR);
+			bn.addChild(new AstNode(AstNodeType.IDENTIFIER, _tok.accept(TokenType.SPECIFIER).value));
+			bn.addChild(new AstNode(AstNodeType.IDENTIFIER, _tok.accept(TokenType.TYPE).value));
+			bn.addChild(new AstNode(AstNodeType.IDENTIFIER, _tok.accept(TokenType.IDENTIFIER).value));
 			_tok.accept(TokenType.SEMI); // skip ';'
 			ctx.addChild(bn);
 		}
@@ -84,7 +91,7 @@
 		/**
 		 * block      = '{' {statement} '}';
 		 */
-		private function block(ctx:BranchNode):void  
+		private function block(ctx:AstNode):void  
 		{
 			log_track("block");
 			_tok.accept(TokenType.LBRACE);
@@ -99,20 +106,20 @@
 		 * assignment    = [declaration | Identifier] '=' expression;
 		 * function_call = Identifier '(' [expression] {',' expression} ')';
 		 */
-		private function statement(ctx:BranchNode):void
+		private function statement(ctx:AstNode):void
 		{
 			log_track("statement");
 			
 			var t:TokenType = _tok.token.type;
-			var bn:BranchNode;
+			var bn:AstNode;
 			
 			if (t == TokenType.EOF)
 				throw new Error("Unexpected end of file, missing end of block '}'");
 			else if (t == TokenType.TYPE)
 			{
-				var decl:BranchNode = new BranchNode(AstNodeType.DECLARATION);
-				decl.addChild(new LeafNode(_tok.accept(TokenType.TYPE).value, AstNodeType.IDENTIFIER));
-				decl.addChild(new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER));
+				var decl:AstNode = new AstNode(AstNodeType.DECLARATION);
+				decl.addChild(new AstNode(AstNodeType.IDENTIFIER, _tok.accept(TokenType.TYPE).value));
+				decl.addChild(new AstNode(AstNodeType.IDENTIFIER, _tok.accept(TokenType.IDENTIFIER).value));
 				
 				// plain declaration
 				if (_tok.token.type == TokenType.SEMI)
@@ -123,7 +130,7 @@
 				// assignment with declaration
 				else
 				{
-					bn = new BranchNode(AstNodeType.ASSIGNMENT);
+					bn = new AstNode(AstNodeType.ASSIGNMENT);
 					bn.addChild(decl);
 					_tok.accept(TokenType.EQUAL);
 					expression(bn);
@@ -133,8 +140,8 @@
 			// assignment w/o declaration
 			else if (_tok.peek().type == TokenType.EQUAL)
 			{
-				bn = new BranchNode(AstNodeType.ASSIGNMENT);
-				bn.addChild(new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER));
+				bn = new AstNode(AstNodeType.ASSIGNMENT);
+				bn.addChild(new AstNode(AstNodeType.IDENTIFIER, _tok.accept(TokenType.IDENTIFIER).value));
 				_tok.accept(TokenType.EQUAL); // SKIP '='
 				expression(bn);
 				ctx.addChild(bn);
@@ -149,13 +156,13 @@
 		/**
 		 * function_call = Identifier '(' [expression] {',' expression} ')';
 		 */
-		private function functionCall(ctx:BranchNode):void 
+		private function functionCall(ctx:AstNode):void 
 		{
 			log_track("functionCall");
 			
-			var bn:BranchNode = new BranchNode(AstNodeType.FUNCTION_CALL);
+			var bn:AstNode = new AstNode(AstNodeType.FUNCTION_CALL);
 			ctx.children.push(bn);
-			bn.children.push(new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER));
+			bn.children.push(new AstNode(AstNodeType.IDENTIFIER, _tok.accept(TokenType.IDENTIFIER).value));
 			
 			_tok.accept(TokenType.LPAREN); // SKIP '('
 			
@@ -175,7 +182,7 @@
 		 * unary_expression = ['-'] atom_expression;
 		 * atom_expression  = Identifier | function_call | '(' expression ')' | literal | access;
 		 */
-		private function expression(ctx:BranchNode):void 
+		private function expression(ctx:AstNode):void 
 		{
 			log_track("expression");
 			ctx.children.push(addExpression());
@@ -186,11 +193,11 @@
 			var ret:AstNode = mulExpression();
 			while (true)
 			{
-				var bn:BranchNode;
+				var bn:AstNode;
 				if (_tok.token.type == TokenType.PLUS)
-					bn = new BranchNode(AstNodeType.EXPR_ADD, AstNodeType.ADD_ADD);
+					bn = new AstNode(AstNodeType.ADD);
 				else if (_tok.token.type == TokenType.MINUS)
-					bn = new BranchNode(AstNodeType.EXPR_ADD, AstNodeType.ADD_SUBTRACT);
+					bn = new AstNode(AstNodeType.SUBTRACT);
 				else
 					return ret;
 					
@@ -208,11 +215,11 @@
 			var ret:AstNode = unaryExpression();
 			while (true)
 			{
-				var bn:BranchNode;
+				var bn:AstNode;
 				if (_tok.token.type == TokenType.STAR)
-					bn = new BranchNode(AstNodeType.EXPR_MUL, AstNodeType.MUL_MULTIPLTY);
+					bn = new AstNode(AstNodeType.MULTIPLTY);
 				else if (_tok.token.type == TokenType.SLASH)
-					bn = new BranchNode(AstNodeType.EXPR_MUL, AstNodeType.MUL_DIVIDE);
+					bn = new AstNode(AstNodeType.DIVIDE);
 				else
 					return ret;
 					
@@ -227,9 +234,9 @@
 		
 		private function unaryExpression():AstNode
 		{			
-			var bn:BranchNode;
+			var bn:AstNode;
 			if (_tok.token.type == TokenType.MINUS)
-				bn = new BranchNode(AstNodeType.EXPR_NEG);
+				bn = new AstNode(AstNodeType.NEG);
 			else
 				return atomExpression();
 				
@@ -254,22 +261,22 @@
 				if (t.type == TokenType.LPAREN)
 				{
 					// bad hack to capture functionCall output
-					var temp:BranchNode = new BranchNode(AstNodeType.NONE);
+					var temp:AstNode = new AstNode(AstNodeType.NONE);
 					functionCall(temp);
 					ret =  temp.children[0];
 				}
 				else if (t.type == TokenType.DOT)
 				{
-					var bn:BranchNode = new BranchNode(AstNodeType.ACCESS);
-					bn.addChild(new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER));
+					var bn:AstNode = new AstNode(AstNodeType.ACCESS);
+					bn.addChild(new AstNode(AstNodeType.IDENTIFIER, _tok.accept(TokenType.IDENTIFIER).value));
 					_tok.accept(TokenType.DOT); // SKIP 'dot'
-					bn.addChild(new LeafNode(_tok.accept(TokenType.IDENTIFIER).value, AstNodeType.IDENTIFIER));
+					bn.addChild(new AstNode(AstNodeType.IDENTIFIER, _tok.accept(TokenType.IDENTIFIER).value));
 					ret = bn;
 				}
 				// variable
 				else 
 				{
-					ret = new LeafNode(_tok.token.value, AstNodeType.IDENTIFIER);
+					ret = new AstNode(AstNodeType.IDENTIFIER, _tok.token.value);
 					_tok.next(); // SKIP identifier
 				}
 			}
@@ -283,7 +290,7 @@
 			// number literal
 			else if (_tok.token.type == TokenType.NUMBER)
 			{
-				ret = new LeafNode(_tok.token.value, AstNodeType.NUMBER_LITERAL);
+				ret = new AstNode(AstNodeType.NUMBER_LITERAL, _tok.token.value);
 				_tok.next(); // SKIP number literal
 			}
 			else
@@ -291,8 +298,6 @@
 				throw new UnexpectedTokenException(_tok.token);
 			}
 			return ret;
-		}		
-		
-		public function get tree():BranchNode { return _tree; }
+		}
 	}
 }
