@@ -24,6 +24,7 @@ public static const SHADER:TokenType = new TokenType();
 /**
  * Grouping, delimiting
  */
+public static const COLON   /* : */ :TokenType = new TokenType();
 public static const DOT     /* . */ :TokenType = new TokenType();
 public static const SEMI    /* ; */ :TokenType = new TokenType();
 public static const LBRACE  /* { */ :TokenType = new TokenType();

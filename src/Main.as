@@ -22,18 +22,18 @@ package
 			removeEventListener(Event.ADDED_TO_STAGE, init);
 			
 			var src:XML = <data><![CDATA[
+			
 				attribute Float4 pos;
 				attribute Float4 norm;
 				attribute Float4 uv;
 
-				uniform Matrix mpos;
-				uniform Matrix mproj;
-				uniform Float4 light;
-
 				varying Float4 tuv;
 				varying Float4 lpow;
 
-				shader vertex
+				shader vertex :
+					Matrix mpos,
+					Matrix mproj,
+					Float4 light
 				{
 					out = pos * mpos * mproj;
 					Float4 tnorm = normalize(norm * pos);
@@ -41,10 +41,12 @@ package
 					tuv = uv;
 				}
 
-				shader fragment
+				shader fragment : 
+					Texture tex
 				{
 					out = texture(tex, tuv) * (lpow * 0.8 + 0.2);
 				}
+
 			]]></data>;
 
 			

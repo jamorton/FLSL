@@ -1,7 +1,6 @@
-﻿package flsl.parser 
+﻿package flsl.parser
 {
-	import flash.system.IMEConversionMode;
-	import flsl.parser.ast.*;
+	
 	import flsl.parser.exception.UnexpectedTokenException;
 	
 	public class Parser 
@@ -45,7 +44,7 @@
 		}
 		
 		/**
-		 * program    = { shader | shader_var };
+		 * program = { shader | shader_var };
 		 */
 		private function program(ctx:AstNode):void
 		{
@@ -61,16 +60,28 @@
 		}
 		
 		/**
-		 * shader     = 'shader' Identifier block;
+		 * shader = 'shader' Identifier [':' declaration {',' declaration}] block;
 		 */
 		private function shader(ctx:AstNode):void
 		{
 			log_track("shader");
 			_tok.accept(TokenType.SHADER); // SKIP 'shader'
 			var bn:AstNode = new AstNode(AstNodeType.SHADER);
-			var ln:AstNode = new AstNode(AstNodeType.IDENTIFIER, _tok.accept(TokenType.IDENTIFIER).value);
+			bn.addChild(new AstNode(AstNodeType.IDENTIFIER, _tok.accept(TokenType.IDENTIFIER).value));
+			
+			if (_tok.token.type == TokenType.COLON)
+			{
+				_tok.next();
+				bn.children.push(declaration());
+				
+				while (_tok.token.type != TokenType.LBRACE) 
+				{
+					_tok.accept(TokenType.COMMA);
+					bn.children.push(declaration());
+				}
+			}
+			
 			ctx.addChild(bn);
-			bn.addChild(ln);
 			block(bn);
 		}
 		
@@ -115,18 +126,14 @@
 			
 			if (t == TokenType.EOF)
 				throw new Error("Unexpected end of file, missing end of block '}'");
+			
 			else if (t == TokenType.TYPE)
 			{
-				var decl:AstNode = new AstNode(AstNodeType.DECLARATION);
-				decl.addChild(new AstNode(AstNodeType.IDENTIFIER, _tok.accept(TokenType.TYPE).value));
-				decl.addChild(new AstNode(AstNodeType.IDENTIFIER, _tok.accept(TokenType.IDENTIFIER).value));
+				var decl:AstNode = declaration();
 				
 				// plain declaration
 				if (_tok.token.type == TokenType.SEMI)
-				{
-					_tok.accept(TokenType.SEMI); // SKIP ';'
 					ctx.addChild(decl);
-				}
 				// assignment with declaration
 				else
 				{
@@ -151,6 +158,14 @@
 				functionCall(ctx);
 				
 			_tok.accept(TokenType.SEMI);
+		}
+		
+		private function declaration():AstNode
+		{
+			var bn:AstNode = new AstNode(AstNodeType.DECLARATION);
+			bn.addChild(new AstNode(AstNodeType.IDENTIFIER, _tok.accept(TokenType.TYPE).value));
+			bn.addChild(new AstNode(AstNodeType.IDENTIFIER, _tok.accept(TokenType.IDENTIFIER).value));
+			return bn;
 		}
 		
 		/**

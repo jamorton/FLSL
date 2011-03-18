@@ -10,6 +10,7 @@
 			[TokenType.IDENTIFIER, /[a-zA-Z_][a-zA-Z0-9_]*/],
 			[TokenType.NUMBER, /[-+]?[0-9]+[.]?[0-9]*([eE][-+]?[0-9]+)?/],
 			// grouping
+			[TokenType.COLON, /:/],
 			[TokenType.SEMI, /;/],
 			[TokenType.LBRACE, /{/],
 			[TokenType.RBRACE, /}/],
@@ -138,7 +139,6 @@
 					return TokenType.TYPE;
 				case "attribute":
 				case "varying":
-				case "uniform":
 					return TokenType.SPECIFIER;
 			}
 			return type;

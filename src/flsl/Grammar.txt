@@ -20,19 +20,20 @@ IdPart     = Letter | '_';
 Identifier = IdPart {IdPart Digit};
 
 Type      = 'Texture' | 'Matrix' | 'Float4';
-Specifier = 'attribute' | 'varying' | 'uniform';
+Specifier = 'attribute' | 'varying';
 
 (*============================ PARSER RULES ============================*)
 
 literal = Number;
 
-program    = { shader | shader_var };
-shader     = 'shader' Identifier block;
+program     = { shader | shader_var };
+block       = '{' {statement} '}';
+declaration = Type Identifier;
+
+shader     = 'shader' Identifier [':' declaration {',' declaration}] block;
 shader_var = Specifier Type Identifier ';';
-block      = '{' {statement} '}';
 
 statement     = (declaration | assignment | function_call) ';';
-declaration   = Type Identifier;
 assignment    = [declaration | Identifier] '=' expression;
 function_call = Identifier '(' [expression] {',' expression} ')';
 
